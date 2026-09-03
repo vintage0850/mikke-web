@@ -8,9 +8,26 @@
 
 ## 特徴
 
-- **サーバーなし。完全にブラウザだけで動きます。** GitHub Pages のような静的ホスティングに置くだけで動作します。
-- AI呼び出しは Google Gemini API を**ブラウザから直接**叩きます。ユーザーが自分の Gemini APIキーを入力し、`localStorage` に保存します（他のどこにも送信されません）。
-- すべてのデータ（行動・振り返り・Insightなど）は `localStorage` に保存されます。ブラウザ/端末をまたいだ同期はありません。
+- **フロントエンドはサーバーなし。** GitHub Pages のような静的ホスティングに置くだけで動作します。
+- AI呼び出しは、あなたが立てる**軽量プロキシ (Cloudflare Worker)** 経由で Gemini API を叩きます。Geminiの本物のAPIキーはWorker側だけに置かれ、ブラウザには一切渡りません。
+- デモ利用者は共通の**アクセスコード**（あなたが決めるパスフレーズ）を入力するだけで使えます。コードは各自の `localStorage` に保存され、他へは送信されません。
+- すべての行動データ（行動・振り返り・Insightなど）はブラウザの `localStorage` に保存されます。端末をまたいだ同期はありません。
+
+## 配布用プロキシ (Cloudflare Worker) のデプロイ
+
+Gemini APIキーをあなたの手元に置いたまま、他人にアプリを使わせるための仕組みです。無料枠で足ります。
+
+```bash
+cd worker
+npm install -g wrangler   # 初回のみ
+wrangler login
+wrangler secret put GEMINI_API_KEY   # あなたのGemini APIキーを入力
+wrangler secret put ACCESS_CODE      # デモ利用者に伝える合言葉を決めて入力
+wrangler deploy
+```
+
+デプロイ後に表示される URL（例: `https://mikke-proxy.your-subdomain.workers.dev`）を
+`src/config.ts` の `WORKER_URL` に貼り付けてください。
 
 ## ローカルで動かす
 
@@ -19,17 +36,19 @@ npm install
 npm run dev
 ```
 
-`http://localhost:5173` を開き、Gemini APIキー（[Google AI Studio](https://aistudio.google.com/apikey) で無料発行）を入力してください。
+`http://localhost:5173` を開き、アクセスコード（上でWorkerに設定したもの）を入力してください。
 
 ## GitHub Pages への配布
 
-このフォルダ (`mikke-web`) をそのまま **単独のGitHubリポジトリ** として push してください。
+このフォルダ (`mikke-web`) をそのまま **単独のGitHubリポジトリ** として push してください（`worker/` フォルダも含めて構いません。Cloudflareへは別途 `wrangler deploy` で配布するため、GitHub Pages上には公開されません）。
 
-1. `vite.config.ts` の `base: '/mikke-web/'` を、実際のリポジトリ名に合わせて変更する
+1. `src/config.ts` の `WORKER_URL` を、実際にデプロイしたWorkerのURLに変更する
+2. `vite.config.ts` の `base: '/mikke-web/'` を、実際のリポジトリ名に合わせて変更する
    （リポジトリ名が `mikke-web` ならそのままでOK）
-2. GitHub のリポジトリ設定 → Pages → Source を **GitHub Actions** に設定する
-3. `main` ブランチに push すると `.github/workflows/deploy.yml` が自動でビルド・デプロイします
-4. `https://<ユーザー名>.github.io/<リポジトリ名>/` で公開されます
+3. GitHub のリポジトリ設定 → Pages → Source を **GitHub Actions** に設定する
+4. `main` ブランチに push すると `.github/workflows/deploy.yml` が自動でビルド・デプロイします
+5. `https://<ユーザー名>.github.io/<リポジトリ名>/` で公開されます
+6. デモ利用者にはURLとアクセスコードを伝えてください
 
 ## スコープ（MVP）
 

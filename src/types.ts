@@ -88,7 +88,7 @@ export interface Insight {
 }
 
 export interface MikkeState {
-  apiKey: string | null;
+  accessCode: string | null;
   onboardingDone: boolean;
   before: BeforeQuestionnaire | null;
   after: AfterQuestionnaire | null;
@@ -102,7 +102,7 @@ export interface MikkeState {
 }
 
 export const emptyState: MikkeState = {
-  apiKey: null,
+  accessCode: null,
   onboardingDone: false,
   before: null,
   after: null,

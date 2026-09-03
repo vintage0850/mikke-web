@@ -1,7 +1,5 @@
 import type { ActionCategory } from "./types";
-
-const MODEL = "gemini-2.0-flash";
-const ENDPOINT_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
+import { WORKER_URL } from "./config";
 
 const CATEGORIES: ActionCategory[] = [
   "COMPARE",
@@ -19,35 +17,29 @@ const CATEGORIES: ActionCategory[] = [
 class AIError extends Error {}
 
 async function callGemini(
-  apiKey: string,
+  accessCode: string,
   prompt: string,
   schema: object,
 ): Promise<any> {
-  const url = `${ENDPOINT_BASE}/${MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`;
-  const body = {
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: schema,
-      temperature: 0.4,
-    },
-  };
-  const res = await fetch(url, {
+  const res = await fetch(WORKER_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ accessCode, prompt, schema }),
   });
+  if (res.status === 401) {
+    throw new AIError("アクセスコードが正しくありません。");
+  }
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new AIError(`Gemini API error (${res.status}): ${text.slice(0, 300)}`);
+    throw new AIError(`サーバーエラー (${res.status}): ${text.slice(0, 300)}`);
   }
   const data = await res.json();
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new AIError("Gemini API returned no content.");
+  if (!text) throw new AIError("AIから応答がありませんでした。");
   try {
     return JSON.parse(text);
   } catch {
-    throw new AIError("Gemini API returned invalid JSON.");
+    throw new AIError("AIの応答を解析できませんでした。");
   }
 }
 
@@ -58,7 +50,7 @@ export interface ClassifyResult {
 }
 
 export async function classifyActionAndAskReflection(
-  apiKey: string,
+  accessCode: string,
   topic: string,
   action: { description: string; reason: string; result: string },
   existingTags: string[],
@@ -95,7 +87,7 @@ ${CATEGORIES.join(", ")}
     required: ["primaryCategory", "secondaryCategory", "reflectionQuestion"],
   };
 
-  const result = await callGemini(apiKey, prompt, schema);
+  const result = await callGemini(accessCode, prompt, schema);
   return {
     primaryCategory: result.primaryCategory,
     secondaryCategory:
@@ -110,7 +102,7 @@ export interface SignalResult {
 }
 
 export async function extractSignal(
-  apiKey: string,
+  accessCode: string,
   topic: string,
   action: { description: string; reason: string; result: string },
   reflection: { question: string; answer: string },
@@ -142,7 +134,7 @@ export async function extractSignal(
     required: ["tag", "description"],
   };
 
-  return await callGemini(apiKey, prompt, schema);
+  return await callGemini(accessCode, prompt, schema);
 }
 
 export interface InsightResult {
@@ -151,7 +143,7 @@ export interface InsightResult {
 }
 
 export async function generateInsight(
-  apiKey: string,
+  accessCode: string,
   topic: string,
   tag: string,
   evidenceDescriptions: string[],
@@ -182,5 +174,5 @@ confidence は 0.5〜0.9 の範囲で、証拠の数と一貫性に応じて設�
     required: ["statement", "confidence"],
   };
 
-  return await callGemini(apiKey, prompt, schema);
+  return await callGemini(accessCode, prompt, schema);
 }

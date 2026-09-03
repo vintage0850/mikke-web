@@ -12,7 +12,7 @@ import "./App.css";
 
 type Screen =
   | "onboarding"
-  | "apiKey"
+  | "accessCode"
   | "before"
   | "topic"
   | "action"
@@ -40,7 +40,7 @@ export default function App() {
 
   useEffect(() => {
     if (state.onboardingDone && screen === "onboarding") {
-      setScreen(state.apiKey ? (state.topic ? "home" : "before") : "apiKey");
+      setScreen(state.accessCode ? (state.topic ? "home" : "before") : "accessCode");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -61,7 +61,7 @@ export default function App() {
         <button
           onClick={() => {
             update({ onboardingDone: true });
-            setScreen("apiKey");
+            setScreen("accessCode");
           }}
         >
           はじめる
@@ -70,18 +70,17 @@ export default function App() {
     );
   }
 
-  // ---------- API key setup ----------
-  if (screen === "apiKey") {
+  // ---------- Access code setup ----------
+  if (screen === "accessCode") {
     return (
       <Shell>
-        <h2>Gemini APIキーを入力してください</h2>
+        <h2>アクセスコードを入力してください</h2>
         <p className="hint">
-          このアプリはサーバーを持たないため、あなた専用のAPIキーをブラウザ内だけに保存して使います。
-          Google AI Studio (aistudio.google.com) で無料で発行できます。
+          運営から共有されたアクセスコードを入力してください。ブラウザ内だけに保存され、他には送信されません。
         </p>
-        <ApiKeyForm
-          onSubmit={(key) => {
-            update({ apiKey: key });
+        <AccessCodeForm
+          onSubmit={(code) => {
+            update({ accessCode: code });
             setScreen("before");
           }}
         />
@@ -137,13 +136,13 @@ export default function App() {
         <ActionForm
           busy={busy}
           onSubmit={async (description, reason, result) => {
-            if (!state.apiKey || !state.topic) return;
+            if (!state.accessCode || !state.topic) return;
             setBusy(true);
             setError(null);
             try {
               const existingTags = Array.from(new Set(state.signals.map((s) => s.tag)));
               const classified = await classifyActionAndAskReflection(
-                state.apiKey,
+                state.accessCode,
                 state.topic.topic,
                 { description, reason, result },
                 existingTags,
@@ -187,7 +186,7 @@ export default function App() {
         <ReflectionForm
           busy={busy}
           onSubmit={async (answer) => {
-            if (!state.apiKey || !state.topic) return;
+            if (!state.accessCode || !state.topic) return;
             setBusy(true);
             setError(null);
             try {
@@ -201,7 +200,7 @@ export default function App() {
 
               const existingTags = Array.from(new Set(state.signals.map((s) => s.tag)));
               const sig = await extractSignal(
-                state.apiKey,
+                state.accessCode,
                 state.topic.topic,
                 pendingAction,
                 { question: pendingQuestion, answer },
@@ -241,7 +240,7 @@ export default function App() {
                 nextEvidence = [...state.evidence, evidence];
 
                 const gen = await generateInsight(
-                  state.apiKey,
+                  state.accessCode,
                   state.topic.topic,
                   signal.tag,
                   matchingSignals.map((s) => s.description),
@@ -449,7 +448,7 @@ function ErrorBanner({ message, onDismiss }: { message: string; onDismiss: () =>
   );
 }
 
-function ApiKeyForm({ onSubmit }: { onSubmit: (key: string) => void }) {
+function AccessCodeForm({ onSubmit }: { onSubmit: (code: string) => void }) {
   const [value, setValue] = useState("");
   return (
     <form
@@ -460,7 +459,7 @@ function ApiKeyForm({ onSubmit }: { onSubmit: (key: string) => void }) {
     >
       <input
         type="password"
-        placeholder="Gemini API Key"
+        placeholder="アクセスコード"
         value={value}
         onChange={(e) => setValue(e.target.value)}
       />
