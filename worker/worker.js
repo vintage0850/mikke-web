@@ -3,7 +3,7 @@
 //   GEMINI_API_KEY - your Gemini API key
 //   ACCESS_CODE    - shared passphrase demo users must supply
 
-const MODEL = "gemini-2.0-flash";
+const MODEL = "gemini-3.6-flash";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 const CORS_HEADERS = {
