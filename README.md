@@ -46,7 +46,7 @@ npm run dev
 2. `vite.config.ts` の `base: '/mikke-web/'` を、実際のリポジトリ名に合わせて変更する
    （リポジトリ名が `mikke-web` ならそのままでOK）
 3. GitHub のリポジトリ設定 → Pages → Source を **GitHub Actions** に設定する
-4. `main` ブランチに push すると `.github/workflows/deploy.yml` が自動でビルド・デプロイします
+4. `master` ブランチに push すると `.github/workflows/deploy.yml` が自動でビルド・デプロイします
 5. `https://<ユーザー名>.github.io/<リポジトリ名>/` で公開されます
 6. デモ利用者にはURLとアクセスコードを伝えてください
 
